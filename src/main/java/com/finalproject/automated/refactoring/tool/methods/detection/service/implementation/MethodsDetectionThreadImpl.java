@@ -75,21 +75,12 @@ public class MethodsDetectionThreadImpl implements MethodsDetectionThread {
 
     private void analysisMethods(AnalysisMethodRequest analysisMethodRequest) {
         analysisMethodRequest.getIndexOfMethods().
-                forEach(indexModel -> {
-                    DoAnalysisMethodRequest doAnalysisMethodRequest = DoAnalysisMethodRequest.builder()
-                            .fileModel(analysisMethodRequest.getFileModel())
-                            .indexModel(indexModel)
-                            .futures(analysisMethodRequest.getFutures())
-                            .result(analysisMethodRequest.getResult())
-                            .build();
-
-                    doAnalysisMethods(doAnalysisMethodRequest);
-                });
+                forEach(indexModel -> doAnalysisMethods(analysisMethodRequest, indexModel));
     }
 
-    private void doAnalysisMethods(DoAnalysisMethodRequest doAnalysisMethodRequest) {
-        Future future = methodAnalysis.analysis(doAnalysisMethodRequest.getFileModel(),
-                doAnalysisMethodRequest.getIndexModel(), doAnalysisMethodRequest.getResult());
-        doAnalysisMethodRequest.getFutures().add(future);
+    private void doAnalysisMethods(AnalysisMethodRequest analysisMethodRequest, IndexModel indexModel) {
+        Future future = methodAnalysis.analysis(analysisMethodRequest.getFileModel(), indexModel,
+                analysisMethodRequest.getResult());
+        analysisMethodRequest.getFutures().add(future);
     }
 }
