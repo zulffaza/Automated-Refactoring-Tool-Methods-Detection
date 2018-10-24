@@ -48,7 +48,7 @@ public class MethodsDetectionThreadImplTest {
 
     private static final Integer WAITING_TIME = 500;
 
-    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:\\w|\\[|\\]|,|\\s)*(?:\\)))+(?:\\w|,|\\s)*(\\{)+(?:\\s)*$";
+    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[\\w\\[\\],\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
 
     private FileModel fileModel;
 
