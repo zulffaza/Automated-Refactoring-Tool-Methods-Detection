@@ -47,7 +47,7 @@ public class JavaMethodsDetectionTest {
     private static final Integer NUMBER_OF_PATH = 3;
     private static final Integer WAITING_TIME = 500;
 
-    private static final String METHODS_REGEX = "^(?:\\s)*(?:((?:public)|(?:private)|(?:protected)|(?:static)|(?:final)|(?:native)|(?:synchronized)|(?:abstract)|(?:threadsafe)|(?:transient))+\\s)*(?:(\\w*)\\s*)+((?:\\()+(?:\\w|\\[|\\]|,|\\s)*(?:\\)))+(?:\\s)*(\\{)?(?:\\s)*$";
+    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[\\w\\[\\],\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
 
     private FileModel fileModel;
 
