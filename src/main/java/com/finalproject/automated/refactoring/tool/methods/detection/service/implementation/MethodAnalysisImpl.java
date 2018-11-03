@@ -55,6 +55,8 @@ public class MethodAnalysisImpl implements MethodAnalysis {
     private void extendStartIndex(String content, IndexModel indexModel) {
         Integer index = indexModel.getStart();
 
+        // TODO check if its a annotation parameters
+
         while (!isEOF(content.charAt(index)))
             index--;
 
@@ -116,6 +118,8 @@ public class MethodAnalysisImpl implements MethodAnalysis {
 
         if (!parameters.isEmpty()) {
             List<String> words = Arrays.asList(parameters.split(QOMMA_DELIMITER));
+
+            // TODO check if its a keywords for property
 
             words.stream()
                     .map(String::trim)
