@@ -3,7 +3,6 @@ package com.finalproject.automated.refactoring.tool.methods.detection.service.im
 import com.finalproject.automated.refactoring.tool.files.detection.model.FileModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.model.IndexModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.model.service.AnalysisMethodRequest;
-import com.finalproject.automated.refactoring.tool.methods.detection.model.service.DoAnalysisMethodRequest;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodAnalysis;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
