@@ -34,8 +34,6 @@ public class JavaMethodsDetection implements MethodsDetection {
 
     private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\",\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
 
-    private static final List<String> METHODS_KEYWORDS = Collections.singletonList("catch");
-
     @Override
     public List<MethodModel> detect(FileModel fileModel) {
         return detect(Collections.singletonList(fileModel))
@@ -49,7 +47,6 @@ public class JavaMethodsDetection implements MethodsDetection {
 
         doMethodsDetection(fileModels, futures, result);
         threadsWatcher.waitAllThreadsDone(futures, WAITING_TIME);
-        removeKeywordsMethods(result);
 
         return result;
     }
@@ -63,20 +60,5 @@ public class JavaMethodsDetection implements MethodsDetection {
     private void doMethodDetection(FileModel fileModel, List<Future> futures, Map<String, List<MethodModel>> result) {
         Future future = methodsDetectionThread.detect(fileModel, METHODS_REGEX, result);
         futures.add(future);
-    }
-
-    private void removeKeywordsMethods(Map<String, List<MethodModel>> result) {
-        result.forEach((key, methodModels) ->
-                removeKeywordsMethod(methodModels));
-        result.values()
-                .removeIf(List::isEmpty);
-    }
-
-    private void removeKeywordsMethod(List<MethodModel> methodModels) {
-        methodModels.removeIf(this::isHasKeywords);
-    }
-
-    private Boolean isHasKeywords(MethodModel methodModel) {
-        return METHODS_KEYWORDS.contains(methodModel.getName());
     }
 }

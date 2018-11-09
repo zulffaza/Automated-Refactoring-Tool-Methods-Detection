@@ -24,11 +24,13 @@ import java.util.concurrent.Future;
 @Service
 public class MethodAnalysisImpl implements MethodAnalysis {
 
-    private static final String OPEN_BRACES_DELIMITER = "{";
-    private static final String CLOSE_BRACES_DELIMITER = "}";
-    private static final String SEMICOLON_DELIMITER = ";";
-    private static final String OPEN_PARENTHESES_DELIMITER = "\\(";
-    private static final String CLOSE_PARENTHESES_DELIMITER = "\\)";
+    private static final String OPEN_PARENTHESES = "(";
+    private static final String CLOSE_PARENTHESES = ")";
+    private static final String OPEN_BRACES = "{";
+    private static final String CLOSE_BRACES = "}";
+    private static final String SEMICOLON = ";";
+    private static final String OPEN_PARENTHESES_DELIMITER = "\\" + OPEN_PARENTHESES;
+    private static final String CLOSE_PARENTHESES_DELIMITER = "\\" + CLOSE_PARENTHESES;
     private static final String QOMMA_DELIMITER = ",";
     private static final String POINT_DELIMITER = "\\.";
     private static final String WHITESPACE_DELIMITER = "(?:\\s)+";
@@ -44,29 +46,54 @@ public class MethodAnalysisImpl implements MethodAnalysis {
     public Future analysis(FileModel fileModel, IndexModel indexModel, Map<String, List<MethodModel>> result) {
         MethodModel methodModel = MethodModel.builder().build();
 
-        extendStartIndex(fileModel.getContent(), indexModel);
-        anaysisMethodAttributes(fileModel, indexModel, methodModel);
-        analysisMethodBody(fileModel.getContent(), indexModel, methodModel);
-        addToResult(fileModel.getFilename(), methodModel, result);
+        try {
+            extendStartIndex(fileModel.getContent(), indexModel);
+            anaysisMethodAttributes(fileModel, indexModel, methodModel);
+            analysisMethodBody(fileModel.getContent(), indexModel, methodModel);
+            addToResult(fileModel.getFilename(), methodModel, result);
+        } catch (Exception e) {
+            // Do nothing
+            // Mark of non-method analysis
+        }
 
         return null;
     }
 
     private void extendStartIndex(String content, IndexModel indexModel) {
         Integer index = indexModel.getStart();
+        Stack<String> stack = new Stack<>();
 
-        // TODO check if its a annotation parameters
-
-        while (!isEOF(content.charAt(index)))
+        while (!isValid(stack, content.substring(index, index + SECOND_INDEX)))
             index--;
 
         indexModel.setStart(++index);
     }
 
-    private Boolean isEOF(Character character) {
-        String string = String.valueOf(character);
-        return string.equals(OPEN_BRACES_DELIMITER) || string.equals(CLOSE_BRACES_DELIMITER) ||
-                string.equals(SEMICOLON_DELIMITER);
+    private Boolean isValid(Stack<String> stack, String string) {
+        ifParams(stack, string);
+        return validate(stack, string);
+    }
+
+    private void ifParams(Stack<String> stack, String string) {
+        switch (string) {
+            case CLOSE_PARENTHESES:
+                stack.push(string);
+                break;
+            case OPEN_PARENTHESES:
+                stack.pop();
+                break;
+        }
+    }
+
+    private Boolean validate(Stack<String> stack, String string) {
+        if (!stack.empty())
+            return Boolean.FALSE;
+        else
+            return isEOS(string);
+    }
+
+    private Boolean isEOS(String string) {
+        return string.equals(SEMICOLON) || string.equals(CLOSE_BRACES) || string.equals(OPEN_BRACES);
     }
 
     private void anaysisMethodAttributes(FileModel fileModel, IndexModel indexModel, MethodModel methodModel) {
@@ -74,6 +101,10 @@ public class MethodAnalysisImpl implements MethodAnalysis {
                 .substring(indexModel.getStart(), indexModel.getEnd()).trim();
 
         List<String> splitByFirstParentheses = Arrays.asList(methodDeclarations.split(OPEN_PARENTHESES_DELIMITER));
+        simplifyList(splitByFirstParentheses);
+
+        System.out.println(String.join(" --> ", splitByFirstParentheses));
+
         List<String> splitByLastParentheses = Arrays.asList(splitByFirstParentheses.get(SECOND_INDEX)
                 .split(CLOSE_PARENTHESES_DELIMITER));
 
@@ -82,22 +113,46 @@ public class MethodAnalysisImpl implements MethodAnalysis {
         getExceptions(splitByLastParentheses.get(SECOND_INDEX), methodModel);
     }
 
-    private void getKeywords(String filename, String keywords, MethodModel methodModel) {
+    private void simplifyList(List<String> words) {
+        for (Integer index = FIRST_INDEX; index < words.size(); index++) {
+            String word = words.get(index);
+
+            for (Integer charIndex = FIRST_INDEX; charIndex < word.length(); charIndex++) {
+                String character = word.substring(charIndex, charIndex + SECOND_INDEX);
+
+                switch (character) {
+                    case "@":
+                        for (Integer nextIndex = index + SECOND_INDEX; nextIndex < words.size(); nextIndex++) {
+                            String nextWord = words.get(nextIndex);
+
+                            for (Integer nextCharIndex = FIRST_INDEX; nextCharIndex < nextWord.length(); nextCharIndex++) {
+                                String nextCharacter = nextWord.substring(nextCharIndex, nextCharIndex + SECOND_INDEX);
+
+                                if (nextCharacter.equals(")")) {
+                                    words.set(index, String.join("(", words.get(index), nextWord));
+                                    words.remove(nextIndex.intValue());
+                                    break;
+                                }
+                            }
+                        }
+                }
+            }
+        }
+    }
+
+    private void getKeywords(String filename, String keywords, MethodModel methodModel)
+            throws IndexOutOfBoundsException {
         filename = filename.split(POINT_DELIMITER)[FIRST_INDEX];
         keywords = keywords.trim();
 
         List<String> words = Arrays.asList(keywords.split(WHITESPACE_DELIMITER));
-        Boolean isConstructor = words.contains(filename);
+        boolean isConstructor = words.contains(filename);
 
         Integer numOfReservedWords = getNumOfReservedWords(isConstructor);
         Integer size = words.size();
         Integer maxKeywords = size - numOfReservedWords;
 
-        words.stream()
-                .limit(maxKeywords)
-                .map(String::trim)
-                .forEach(methodModel.getKeywords()::add);
-
+        saveKeywords(words, maxKeywords, methodModel);
         numOfReservedWords--;
 
         if (!isConstructor)
@@ -111,6 +166,13 @@ public class MethodAnalysisImpl implements MethodAnalysis {
             return ONE_RESERVED_WORDS;
         else
             return TWO_RESERVED_WORDS;
+    }
+
+    private void saveKeywords(List<String> words, Integer numOfKeywords, MethodModel methodModel) {
+        words.stream()
+                .limit(numOfKeywords)
+                .map(String::trim)
+                .forEach(methodModel.getKeywords()::add);
     }
 
     private void getParameters(String parameters, MethodModel methodModel) {
@@ -138,7 +200,7 @@ public class MethodAnalysisImpl implements MethodAnalysis {
     }
 
     private void getExceptions(String exceptions, MethodModel methodModel) {
-        exceptions = exceptions.replace(OPEN_BRACES_DELIMITER, EMPTY_STRING).trim();
+        exceptions = exceptions.replace(OPEN_BRACES, EMPTY_STRING).trim();
 
         if (!exceptions.isEmpty()) {
             List<String> words = Arrays.asList(exceptions.split(QOMMA_DELIMITER));
@@ -165,10 +227,10 @@ public class MethodAnalysisImpl implements MethodAnalysis {
             String character = String.valueOf(content.charAt(index));
 
             switch (character) {
-                case OPEN_BRACES_DELIMITER:
+                case OPEN_BRACES:
                     stack.push(index);
                     break;
-                case CLOSE_BRACES_DELIMITER:
+                case CLOSE_BRACES:
                     startBodyIndex = stack.pop();
                     break;
             }
