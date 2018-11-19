@@ -31,11 +31,13 @@ public class MethodAnalysisImpl implements MethodAnalysis {
     private static final String SEMICOLON = ";";
     private static final String OPEN_PARENTHESES_DELIMITER = "\\" + OPEN_PARENTHESES;
     private static final String CLOSE_PARENTHESES_DELIMITER = "\\" + CLOSE_PARENTHESES;
+    private static final String AT = "@";
     private static final String QOMMA_DELIMITER = ",";
     private static final String POINT_DELIMITER = "\\.";
     private static final String WHITESPACE_DELIMITER = "(?:\\s)+";
     private static final String EMPTY_STRING = "";
 
+    private static final Integer NORMAL_SIZE = 2;
     private static final Integer FIRST_INDEX = 0;
     private static final Integer SECOND_INDEX = 1;
     private static final Integer ONE_RESERVED_WORDS = 1;
@@ -100,44 +102,69 @@ public class MethodAnalysisImpl implements MethodAnalysis {
         String methodDeclarations = fileModel.getContent()
                 .substring(indexModel.getStart(), indexModel.getEnd()).trim();
 
-        List<String> splitByFirstParentheses = Arrays.asList(methodDeclarations.split(OPEN_PARENTHESES_DELIMITER));
-        simplifyList(splitByFirstParentheses);
+        List<String> splitByFirstParentheses = new ArrayList<>(
+                Arrays.asList(methodDeclarations.split(OPEN_PARENTHESES_DELIMITER)));
+        normalizeList(splitByFirstParentheses, OPEN_PARENTHESES);
 
-        System.out.println(String.join(" --> ", splitByFirstParentheses));
-
-        List<String> splitByLastParentheses = Arrays.asList(splitByFirstParentheses.get(SECOND_INDEX)
-                .split(CLOSE_PARENTHESES_DELIMITER));
+        List<String> splitByLastParentheses = new ArrayList<>(
+                Arrays.asList(splitByFirstParentheses.get(SECOND_INDEX).split(CLOSE_PARENTHESES_DELIMITER)));
+        normalizeList(splitByLastParentheses, CLOSE_PARENTHESES);
 
         getKeywords(fileModel.getFilename(), splitByFirstParentheses.get(FIRST_INDEX), methodModel);
         getParameters(splitByLastParentheses.get(FIRST_INDEX), methodModel);
         getExceptions(splitByLastParentheses.get(SECOND_INDEX), methodModel);
     }
 
-    private void simplifyList(List<String> words) {
-        for (Integer index = FIRST_INDEX; index < words.size(); index++) {
-            String word = words.get(index);
+    private void normalizeList(List<String> words, String delimiter) {
+        if (!isNormalCase(words))
+            doNormalizeList(words, delimiter);
+    }
 
-            for (Integer charIndex = FIRST_INDEX; charIndex < word.length(); charIndex++) {
-                String character = word.substring(charIndex, charIndex + SECOND_INDEX);
+    private Boolean isNormalCase(List<String> words) {
+        return words.size() == NORMAL_SIZE;
+    }
 
-                switch (character) {
-                    case "@":
-                        for (Integer nextIndex = index + SECOND_INDEX; nextIndex < words.size(); nextIndex++) {
-                            String nextWord = words.get(nextIndex);
+    private void doNormalizeList(List<String> words, String delimiter) {
+        Integer index;
 
-                            for (Integer nextCharIndex = FIRST_INDEX; nextCharIndex < nextWord.length(); nextCharIndex++) {
-                                String nextCharacter = nextWord.substring(nextCharIndex, nextCharIndex + SECOND_INDEX);
+        for (index = FIRST_INDEX; index < words.size(); index++) {
+            String firstChar = words.get(index).substring(FIRST_INDEX, FIRST_INDEX + SECOND_INDEX);
 
-                                if (nextCharacter.equals(")")) {
-                                    words.set(index, String.join("(", words.get(index), nextWord));
-                                    words.remove(nextIndex.intValue());
-                                    break;
-                                }
-                            }
-                        }
-                }
-            }
+            if (isSplittedIndexFound(firstChar, index))
+                break;
         }
+
+        joinList(words, delimiter, checkIfLastIndex(words, index));
+    }
+
+    private Boolean isSplittedIndexFound(String firstChar, Integer index) {
+        Boolean isAt = isAt(firstChar);
+        Boolean isFirst = index.equals(FIRST_INDEX);
+
+        return (isFirst && !isAt) || (!isFirst && isAt);
+    }
+
+    private Boolean isAt(String word) {
+        return word.equals(AT);
+    }
+
+    private Integer checkIfLastIndex(List<String> words, Integer index) {
+        if (index.equals(words.size()))
+            return --index;
+
+        return index;
+    }
+
+    private void joinList(List<String> words, String delimiter, Integer limitIndex) {
+        List<String> keywords = words.subList(FIRST_INDEX, limitIndex);
+        List<String> parameters = words.subList(limitIndex, words.size());
+
+        String keyword = String.join(delimiter, keywords);
+        String parameter = String.join(delimiter, parameters);
+
+        words.clear();
+        words.add(keyword);
+        words.add(parameter);
     }
 
     private void getKeywords(String filename, String keywords, MethodModel methodModel)
