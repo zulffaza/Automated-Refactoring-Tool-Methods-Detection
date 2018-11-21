@@ -77,8 +77,11 @@ public class ApplicationTest {
                 "        mEmailContent = emailContent;\n" +
                 "    }\n" +
                 "\n" +
-                "    @GetMapping(\"/{api}/city\")\n" +
-                "    public String getEmailSubject(@RequestParam(required = false, defaultValue = \"0\") Integer page,\n" +
+                "    @GetMapping (\n" +
+                "               value = \"/{api}/city\",\n" +
+                "               produces = MediaType.APPLICATION_JSON_VALUE\n" +
+                "    )\n" +
+                "    public Response < String, String > getEmailSubject(@RequestParam(required = false, defaultValue = \"0\") Integer page,\n" +
                 "                                              @RequestParam(required = false, defaultValue = \"10\") Integer pageSize,\n" +
                 "                                              @RequestParam(required = false) Integer sort) {\n" +
                 "        try {\n" +

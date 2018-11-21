@@ -34,7 +34,7 @@ public class MethodAnalysisImpl implements MethodAnalysis {
     private static final String AT = "@";
     private static final String QOMMA_DELIMITER = ",";
     private static final String POINT_DELIMITER = "\\.";
-    private static final String WHITESPACE_DELIMITER = "(?:\\s)+";
+    private static final String WHITESPACE_DELIMITER = "(?:\\h)+";
     private static final String EMPTY_STRING = "";
 
     private static final Integer NORMAL_SIZE = 2;
@@ -141,7 +141,7 @@ public class MethodAnalysisImpl implements MethodAnalysis {
         Boolean isAt = isAt(firstChar);
         Boolean isFirst = index.equals(FIRST_INDEX);
 
-        return (isFirst && !isAt) || (!isFirst && isAt);
+        return ((isFirst && !isAt) || (!isFirst && isAt));
     }
 
     private Boolean isAt(String word) {
