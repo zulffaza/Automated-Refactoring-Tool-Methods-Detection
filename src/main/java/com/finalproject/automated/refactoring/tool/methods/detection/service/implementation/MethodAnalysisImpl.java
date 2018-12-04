@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 /**
  * @author fazazulfikapp
@@ -32,9 +33,11 @@ public class MethodAnalysisImpl implements MethodAnalysis {
     private static final String OPEN_PARENTHESES_DELIMITER = "\\" + OPEN_PARENTHESES;
     private static final String CLOSE_PARENTHESES_DELIMITER = "\\" + CLOSE_PARENTHESES;
     private static final String AT = "@";
+    private static final String LESS_THAN = "<";
+    private static final String GREATER_THAN = ">";
     private static final String QOMMA_DELIMITER = ",";
     private static final String POINT_DELIMITER = "\\.";
-    private static final String WHITESPACE_DELIMITER = "(?:\\h)+";
+    private static final String WHITESPACE_DELIMITER = "(?:\\s)+";
     private static final String EMPTY_STRING = "";
 
     private static final Integer NORMAL_SIZE = 2;
@@ -128,7 +131,7 @@ public class MethodAnalysisImpl implements MethodAnalysis {
         Integer index;
 
         for (index = FIRST_INDEX; index < words.size(); index++) {
-            String firstChar = words.get(index).substring(FIRST_INDEX, FIRST_INDEX + SECOND_INDEX);
+            String firstChar = words.get(index).substring(FIRST_INDEX, SECOND_INDEX);
 
             if (isSplittedIndexFound(firstChar, index))
                 break;
@@ -172,7 +175,12 @@ public class MethodAnalysisImpl implements MethodAnalysis {
         filename = filename.split(POINT_DELIMITER)[FIRST_INDEX];
         keywords = keywords.trim();
 
-        List<String> words = Arrays.asList(keywords.split(WHITESPACE_DELIMITER));
+        List<String> words = Arrays.stream(keywords.split(WHITESPACE_DELIMITER))
+                .map(String::trim)
+                .collect(Collectors.toList());
+
+        doNormalizeKeywords(words, " ");
+
         boolean isConstructor = words.contains(filename);
 
         Integer numOfReservedWords = getNumOfReservedWords(isConstructor);
@@ -183,9 +191,91 @@ public class MethodAnalysisImpl implements MethodAnalysis {
         numOfReservedWords--;
 
         if (!isConstructor)
-            methodModel.setReturnType(words.get(maxKeywords).trim());
+            methodModel.setReturnType(words.get(maxKeywords));
 
-        methodModel.setName(words.get(maxKeywords + numOfReservedWords).trim());
+        methodModel.setName(words.get(maxKeywords + numOfReservedWords));
+    }
+
+    private void doNormalizeKeywords(List<String> words, String delimiter) {
+        List<Integer> mergeIndex = new ArrayList<>();
+        Stack<String> stack = new Stack<>();
+        Integer index;
+
+        for (index = FIRST_INDEX; index < words.size(); index++) {
+            String word = words.get(index);
+
+            if (isMergePoint(word, stack))
+                fillMergeIndex(word, index, mergeIndex);
+        }
+
+        mergeKeywords(words, mergeIndex, delimiter);
+    }
+
+    private Boolean isMergePoint(String word, Stack<String> stack) {
+        Boolean saveIndex = Boolean.FALSE;
+        Boolean isEmpty = stack.isEmpty();
+
+        for (Integer newIndex = FIRST_INDEX; newIndex < word.length(); newIndex++) {
+            String character = word.substring(newIndex, newIndex + SECOND_INDEX);
+
+            if (isContainOpenParentheses(character)) {
+                stack.push(character);
+                saveIndex = Boolean.TRUE;
+            }
+
+            if (!stack.isEmpty() && isContainCloseParentheses(character, stack)) {
+                stack.pop();
+                saveIndex = !isEmpty && stack.isEmpty();
+            }
+        }
+
+        return saveIndex;
+    }
+
+    private void fillMergeIndex(String word, Integer index, List<Integer> mergeIndex) {
+        String firstCharacter = word.substring(FIRST_INDEX, SECOND_INDEX);
+
+        if (isContainOpenParentheses(firstCharacter))
+            index -= SECOND_INDEX;
+
+        mergeIndex.add(index);
+    }
+
+    private Boolean isContainOpenParentheses(String character) {
+        return character.equals(OPEN_PARENTHESES) || character.equals(LESS_THAN);
+    }
+
+    private Boolean isContainCloseParentheses(String character, Stack<String> stack) {
+        Boolean result = Boolean.FALSE;
+
+        switch (stack.peek()) {
+            case OPEN_PARENTHESES:
+                result = character.equals(CLOSE_PARENTHESES);
+                break;
+            case LESS_THAN:
+                result = character.equals(GREATER_THAN);
+                break;
+        }
+
+        return result;
+    }
+
+    private void mergeKeywords(List<String> words, List<Integer> mergeIndex, String delimiter) {
+        for (Integer index = FIRST_INDEX; index < mergeIndex.size(); index++) {
+            Integer startPoint = mergeIndex.get(index);
+            Integer endPoint = mergeIndex.get(++index);
+
+            words.set(startPoint, String.join(delimiter, words.subList(startPoint, ++endPoint)));
+        }
+
+        for (Integer index = (mergeIndex.size() - SECOND_INDEX); index >= FIRST_INDEX; index--) {
+            Integer endPoint = mergeIndex.get(index);
+            Integer startPoint = mergeIndex.get(--index) + SECOND_INDEX;
+
+            for (Integer count = startPoint; count <= endPoint; count++) {
+                words.remove(startPoint.intValue());
+            }
+        }
     }
 
     private Integer getNumOfReservedWords(Boolean isConstructor) {
@@ -198,7 +288,6 @@ public class MethodAnalysisImpl implements MethodAnalysis {
     private void saveKeywords(List<String> words, Integer numOfKeywords, MethodModel methodModel) {
         words.stream()
                 .limit(numOfKeywords)
-                .map(String::trim)
                 .forEach(methodModel.getKeywords()::add);
     }
 
@@ -206,21 +295,35 @@ public class MethodAnalysisImpl implements MethodAnalysis {
         parameters = parameters.trim();
 
         if (!parameters.isEmpty()) {
-            List<String> words = Arrays.asList(parameters.split(QOMMA_DELIMITER));
+            List<String> words = Arrays.stream(parameters.split(QOMMA_DELIMITER))
+                    .map(String::trim)
+                    .collect(Collectors.toList());
 
-            // TODO check if its a keywords for property
+            doNormalizeKeywords(words, ", ");
 
             words.stream()
-                    .map(String::trim)
-                    .map(parameter -> Arrays.asList(parameter.split(WHITESPACE_DELIMITER)))
-                    .map(splittedParameters ->
-                            createPropertyModel(splittedParameters.get(FIRST_INDEX), splittedParameters.get(SECOND_INDEX)))
+                    .map(this::splitList)
+                    .map(this::createPropertyModel)
                     .forEach(methodModel.getParameters()::add);
         }
     }
 
-    private PropertyModel createPropertyModel(String type, String name) {
+    private List<String> splitList(String parameter) {
+        List<String> words = Arrays.stream(parameter.split(WHITESPACE_DELIMITER))
+                .map(String::trim)
+                .collect(Collectors.toList());
+
+        doNormalizeKeywords(words, " ");
+
+        return words;
+    }
+
+    private PropertyModel createPropertyModel(List<String> splittedParameters) {
+        String name = splittedParameters.remove(splittedParameters.size() - SECOND_INDEX);
+        String type = splittedParameters.remove(splittedParameters.size() - SECOND_INDEX);
+
         return PropertyModel.builder()
+                .keywords(splittedParameters)
                 .type(type)
                 .name(name)
                 .build();
