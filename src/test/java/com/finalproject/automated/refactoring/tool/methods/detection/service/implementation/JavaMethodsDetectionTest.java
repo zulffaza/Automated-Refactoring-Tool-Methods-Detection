@@ -2,6 +2,7 @@ package com.finalproject.automated.refactoring.tool.methods.detection.service.im
 
 import com.finalproject.automated.refactoring.tool.files.detection.model.FileModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
+import com.finalproject.automated.refactoring.tool.methods.detection.service.implementation.util.TestUtil;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
 import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
 import org.junit.Before;
@@ -10,6 +11,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Collections;
@@ -17,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
+@ActiveProfiles(profiles = "non-async")
 public class JavaMethodsDetectionTest {
 
     @Autowired
@@ -47,43 +49,17 @@ public class JavaMethodsDetectionTest {
     private static final Integer NUMBER_OF_PATH = 3;
     private static final Integer WAITING_TIME = 500;
 
-    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[\\w\\[\\],\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
+    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\".,\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
 
     private FileModel fileModel;
 
     @Before
     public void setUp() {
-        Future future = new Future() {
-
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
-
-            @Override
-            public boolean isDone() {
-                return true;
-            }
-
-            @Override
-            public Object get() {
-                return null;
-            }
-
-            @Override
-            public Object get(long timeout, TimeUnit unit) {
-                return null;
-            }
-        };
+        Future future = TestUtil.getFutureExpectation();
 
         fileModel = FileModel.builder()
                 .path("path")
-                .filename("filename")
+                .filename("Filename.java")
                 .content("content")
                 .build();
 

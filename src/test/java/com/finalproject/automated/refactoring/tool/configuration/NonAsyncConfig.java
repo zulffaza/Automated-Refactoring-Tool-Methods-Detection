@@ -1,4 +1,4 @@
-package com.finalproject.automated.refactoring.tool.methods.detection.configuration;
+package com.finalproject.automated.refactoring.tool.configuration;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Profile;
 /**
  * @author fazazulfikapp
  * @version 1.0.0
- * @since 22 October 2018
+ * @since 4 December 2018
  */
 
 @Configuration

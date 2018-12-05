@@ -32,7 +32,7 @@ public class JavaMethodsDetection implements MethodsDetection {
 
     private static final Integer WAITING_TIME = 500;
 
-    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[\\w\\[\\],\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
+    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\".,\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
 
     @Override
     public List<MethodModel> detect(FileModel fileModel) {
@@ -54,10 +54,10 @@ public class JavaMethodsDetection implements MethodsDetection {
     private void doMethodsDetection(List<FileModel> fileModels, List<Future> futures,
                                     Map<String, List<MethodModel>> result) {
         fileModels.forEach(fileModel ->
-                doFileDetection(fileModel, futures, result));
+                doMethodDetection(fileModel, futures, result));
     }
 
-    private void doFileDetection(FileModel fileModel, List<Future> futures, Map<String, List<MethodModel>> result) {
+    private void doMethodDetection(FileModel fileModel, List<Future> futures, Map<String, List<MethodModel>> result) {
         Future future = methodsDetectionThread.detect(fileModel, METHODS_REGEX, result);
         futures.add(future);
     }
