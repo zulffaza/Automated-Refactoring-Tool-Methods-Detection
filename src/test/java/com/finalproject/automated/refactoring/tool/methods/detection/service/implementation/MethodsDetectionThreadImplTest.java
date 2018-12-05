@@ -3,6 +3,7 @@ package com.finalproject.automated.refactoring.tool.methods.detection.service.im
 import com.finalproject.automated.refactoring.tool.files.detection.model.FileModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.model.IndexModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodAnalysis;
+import com.finalproject.automated.refactoring.tool.methods.detection.service.implementation.util.TestUtil;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
 import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
 import org.junit.Before;
@@ -20,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
+@ActiveProfiles(profiles = "non-async")
 public class MethodsDetectionThreadImplTest {
 
     @Autowired
@@ -47,49 +48,17 @@ public class MethodsDetectionThreadImplTest {
 
     private static final Integer WAITING_TIME = 500;
 
-    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\",\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
+    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\".,\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
 
     private FileModel fileModel;
 
     @Before
     public void setUp() {
-        Future future = new Future() {
-
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
-
-            @Override
-            public boolean isDone() {
-                return true;
-            }
-
-            @Override
-            public Object get() {
-                return null;
-            }
-
-            @Override
-            public Object get(long timeout, TimeUnit unit) {
-                return null;
-            }
-        };
-
-        fileModel = FileModel.builder()
-                .path("com/example/carikado/emailhelp/model")
-                .filename("EmailHelp.java")
-                .content(createFileContent())
-                .build();
+        Future future = TestUtil.getFutureExpectation();
+        fileModel = TestUtil.getFileModel();
 
         createIndexModels().forEach(indexModel ->
-                when(methodAnalysis.analysis(eq(fileModel), eq(indexModel),
-                        eq(Collections.synchronizedMap(new HashMap<>())))).thenReturn(future));
+                stubMethodAnalysis(indexModel, future));
 
         doNothing().when(threadsWatcher)
                 .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(WAITING_TIME));
@@ -113,81 +82,42 @@ public class MethodsDetectionThreadImplTest {
         methodsDetectionThread.detect(fileModel, null, result);
     }
 
-    private String createFileContent() {
-        return "package com.example.carikado.emailhelp.model;\n" +
-                "\n" +
-                "import java.io.Serializable;\n" +
-                "\n" +
-                "/**\n" +
-                " * Merupakan model untuk mengirim bantuan user menggunakan email\n" +
-                " *\n" +
-                " * @author Faza Zulfika P P\n" +
-                " * @version 1.0\n" +
-                " * @since 13 Oktober 2017\n" +
-                " */\n" +
-                "public class EmailHelp implements Serializable {\n" +
-                "\n" +
-                "    private String mEmailSubject;\n" +
-                "    private String mEmailContent;\n" +
-                "\n" +
-                "    public EmailHelp() {\n" +
-                "\n" +
-                "    }\n" +
-                "\n" +
-                "    public EmailHelp(String emailSubject, String emailContent) throws Exception, IOException {\n" +
-                "        mEmailSubject = emailSubject;\n" +
-                "        mEmailContent = emailContent;\n" +
-                "    }\n" +
-                "\n" +
-                "    public String getEmailSubject() {\n" +
-                "        return mEmailSubject;\n" +
-                "    }\n" +
-                "\n" +
-                "    public void setEmailSubject(String emailSubject) {\n" +
-                "        mEmailSubject = emailSubject;\n" +
-                "    }\n" +
-                "\n" +
-                "    public String getEmailContent() {\n" +
-                "        return mEmailContent;\n" +
-                "    }\n" +
-                "\n" +
-                "    public void setEmailContent(String emailContent) {\n" +
-                "        mEmailContent = emailContent;\n" +
-                "    }\n" +
-                "}";
+    private void stubMethodAnalysis(IndexModel indexModel, Future future) {
+        when(methodAnalysis.analysis(eq(fileModel), eq(indexModel),
+                eq(Collections.synchronizedMap(new HashMap<>())))).thenReturn(future);
     }
 
     private List<IndexModel> createIndexModels() {
         List<IndexModel> indexModels = new ArrayList<>();
 
         indexModels.add(IndexModel.builder()
-                .start(352)
-                .end(367)
+                .start(155)
+                .end(228)
                 .build());
 
         indexModels.add(IndexModel.builder()
-                .start(385)
-                .end(469)
+                .start(241)
+                .end(360)
                 .build());
 
         indexModels.add(IndexModel.builder()
-                .start(570)
-                .end(590)
+                .start(447)
+                .end(459)
                 .build());
 
         indexModels.add(IndexModel.builder()
-                .start(643)
-                .end(682)
+                .start(503)
+                .end(535)
                 .build());
 
         indexModels.add(IndexModel.builder()
-                .start(745)
-                .end(765)
+                .start(586)
+                .end(603)
                 .build());
 
         indexModels.add(IndexModel.builder()
-                .start(818)
-                .end(857)
+                .start(652)
+                .end(694)
                 .build());
 
         return indexModels;
