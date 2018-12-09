@@ -2,12 +2,13 @@ package com.finalproject.automated.refactoring.tool.methods.detection.service.im
 
 import com.finalproject.automated.refactoring.tool.files.detection.model.FileModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.model.IndexModel;
-import com.finalproject.automated.refactoring.tool.methods.detection.model.service.AnalysisMethodRequest;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodAnalysis;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
 import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author fazazulfikapp
@@ -33,53 +35,53 @@ public class MethodsDetectionThreadImpl implements MethodsDetectionThread {
     @Autowired
     private ThreadsWatcher threadsWatcher;
 
-    private static final Integer WAITING_TIME = 500;
+    @Value("${threads.waiting.time}")
+    private Integer waitingTime;
+
+    @Value("${methods.detection.regex}")
+    private String methodsRegex;
 
     @Async
     @Override
-    public Future detect(FileModel fileModel, String methodsRegex, Map<String, List<MethodModel>> result) {
-        List<IndexModel> indexOfMethods = getIndexOfMethods(fileModel.getContent(), methodsRegex);
-        List<Future> futures = new ArrayList<>();
+    public Future detect(@NonNull FileModel fileModel, @NonNull Map<String, List<MethodModel>> result) {
+        List<IndexModel> indexOfMethods = getIndexOfMethods(fileModel.getContent());
+        List<Future> threads = doAnalysisMethods(indexOfMethods, fileModel, result);
 
-        AnalysisMethodRequest analysisMethodRequest = AnalysisMethodRequest.builder()
-                .fileModel(fileModel)
-                .indexOfMethods(indexOfMethods)
-                .futures(futures)
-                .result(result)
-                .build();
-
-        analysisMethods(analysisMethodRequest);
-        threadsWatcher.waitAllThreadsDone(futures, WAITING_TIME);
+        threadsWatcher.waitAllThreadsDone(threads, waitingTime);
 
         return null;
     }
 
-    private List<IndexModel> getIndexOfMethods(String content, String methodsRegex) {
-        List<IndexModel> indexModels = new ArrayList<>();
-
+    private List<IndexModel> getIndexOfMethods(String content) {
         Pattern pattern = Pattern.compile(methodsRegex, Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(content);
 
-        while (matcher.find()) {
-            IndexModel indexModel = IndexModel.builder()
-                    .start(matcher.start())
-                    .end(matcher.end())
-                    .build();
+        return findIndex(matcher);
+    }
 
-            indexModels.add(indexModel);
+    private List<IndexModel> findIndex(Matcher matcher) {
+        List<IndexModel> indexModels = new ArrayList<>();
+
+        while (matcher.find()) {
+            saveIndex(matcher, indexModels);
         }
 
         return indexModels;
     }
 
-    private void analysisMethods(AnalysisMethodRequest analysisMethodRequest) {
-        analysisMethodRequest.getIndexOfMethods().
-                forEach(indexModel -> doAnalysisMethods(analysisMethodRequest, indexModel));
+    private void saveIndex(Matcher matcher, List<IndexModel> indexModels) {
+        IndexModel indexModel = IndexModel.builder()
+                .start(matcher.start())
+                .end(matcher.end())
+                .build();
+
+        indexModels.add(indexModel);
     }
 
-    private void doAnalysisMethods(AnalysisMethodRequest analysisMethodRequest, IndexModel indexModel) {
-        Future future = methodAnalysis.analysis(analysisMethodRequest.getFileModel(), indexModel,
-                analysisMethodRequest.getResult());
-        analysisMethodRequest.getFutures().add(future);
+    private List<Future> doAnalysisMethods(List<IndexModel> indexOfMethods, FileModel fileModel,
+                                           Map<String, List<MethodModel>> result) {
+        return indexOfMethods.stream()
+                .map(indexOfMethod -> methodAnalysis.analysis(fileModel, indexOfMethod, result))
+                .collect(Collectors.toList());
     }
 }

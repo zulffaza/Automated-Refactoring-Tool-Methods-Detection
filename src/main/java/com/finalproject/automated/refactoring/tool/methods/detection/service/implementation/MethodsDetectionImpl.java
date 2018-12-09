@@ -5,15 +5,17 @@ import com.finalproject.automated.refactoring.tool.methods.detection.service.Met
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
 import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 /**
  * @author fazazulfikapp
@@ -22,7 +24,7 @@ import java.util.concurrent.Future;
  */
 
 @Service
-public class JavaMethodsDetection implements MethodsDetection {
+public class MethodsDetectionImpl implements MethodsDetection {
 
     @Autowired
     private MethodsDetectionThread methodsDetectionThread;
@@ -30,35 +32,28 @@ public class JavaMethodsDetection implements MethodsDetection {
     @Autowired
     private ThreadsWatcher threadsWatcher;
 
-    private static final Integer WAITING_TIME = 500;
-
-    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\".,\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
+    @Value("${threads.waiting.time}")
+    private Integer waitingTime;
 
     @Override
-    public List<MethodModel> detect(FileModel fileModel) {
+    public List<MethodModel> detect(@NonNull FileModel fileModel) {
         return detect(Collections.singletonList(fileModel))
                 .get(fileModel.getFilename());
     }
 
     @Override
-    public Map<String, List<MethodModel>> detect(List<FileModel> fileModels) {
+    public Map<String, List<MethodModel>> detect(@NonNull List<FileModel> fileModels) {
         Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
-        List<Future> futures = new ArrayList<>();
+        List<Future> threads = doMethodsDetection(fileModels, result);
 
-        doMethodsDetection(fileModels, futures, result);
-        threadsWatcher.waitAllThreadsDone(futures, WAITING_TIME);
+        threadsWatcher.waitAllThreadsDone(threads, waitingTime);
 
         return result;
     }
 
-    private void doMethodsDetection(List<FileModel> fileModels, List<Future> futures,
-                                    Map<String, List<MethodModel>> result) {
-        fileModels.forEach(fileModel ->
-                doMethodDetection(fileModel, futures, result));
-    }
-
-    private void doMethodDetection(FileModel fileModel, List<Future> futures, Map<String, List<MethodModel>> result) {
-        Future future = methodsDetectionThread.detect(fileModel, METHODS_REGEX, result);
-        futures.add(future);
+    private List<Future> doMethodsDetection(List<FileModel> fileModels, Map<String, List<MethodModel>> result) {
+        return fileModels.stream()
+                .map(fileModel -> methodsDetectionThread.detect(fileModel, result))
+                .collect(Collectors.toList());
     }
 }
