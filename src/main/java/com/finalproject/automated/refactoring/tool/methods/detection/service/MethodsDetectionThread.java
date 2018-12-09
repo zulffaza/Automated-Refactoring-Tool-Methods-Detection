@@ -16,6 +16,5 @@ import java.util.concurrent.Future;
 
 public interface MethodsDetectionThread {
 
-    Future detect(@NonNull FileModel fileModel, @NonNull String methodsRegex,
-                  @NonNull Map<String, List<MethodModel>> result);
+    Future detect(@NonNull FileModel fileModel, @NonNull Map<String, List<MethodModel>> result);
 }

@@ -9,9 +9,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Collections;
@@ -34,11 +34,10 @@ import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@ActiveProfiles(profiles = "non-async")
-public class JavaMethodsDetectionTest {
+public class MethodsDetectionImplTest {
 
     @Autowired
-    private JavaMethodsDetection methodsDetection;
+    private MethodsDetectionImpl methodsDetection;
 
     @MockBean
     private MethodsDetectionThread methodsDetectionThread;
@@ -46,10 +45,10 @@ public class JavaMethodsDetectionTest {
     @MockBean
     private ThreadsWatcher threadsWatcher;
 
-    private static final Integer NUMBER_OF_PATH = 3;
-    private static final Integer WAITING_TIME = 500;
+    @Value("${threads.waiting.time}")
+    private Integer waitingTime;
 
-    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\".,\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
+    private static final Integer NUMBER_OF_PATH = 3;
 
     private FileModel fileModel;
 
@@ -63,10 +62,10 @@ public class JavaMethodsDetectionTest {
                 .content("content")
                 .build();
 
-        when(methodsDetectionThread.detect(eq(fileModel), eq(METHODS_REGEX),
+        when(methodsDetectionThread.detect(eq(fileModel),
                 eq(Collections.synchronizedMap(new HashMap<>())))).thenReturn(future);
         doNothing().when(threadsWatcher)
-                .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(WAITING_TIME));
+                .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(waitingTime));
     }
 
 

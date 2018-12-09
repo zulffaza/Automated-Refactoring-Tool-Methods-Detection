@@ -10,9 +10,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@ActiveProfiles(profiles = "non-async")
 public class MethodsDetectionThreadImplTest {
 
     @Autowired
@@ -46,9 +45,8 @@ public class MethodsDetectionThreadImplTest {
     @MockBean
     private ThreadsWatcher threadsWatcher;
 
-    private static final Integer WAITING_TIME = 500;
-
-    private static final String METHODS_REGEX = "(?:\\s)*(?:(\\w*)\\s*)?((?:\\()+(?:[@\\w\\[\\]<>\\(\\)=\".,\\s])*(?:\\)))+(?:[\\w,\\s])*(\\{)+(?:\\s)*$";
+    @Value("${threads.waiting.time}")
+    private Integer waitingTime;
 
     private FileModel fileModel;
 
@@ -61,25 +59,19 @@ public class MethodsDetectionThreadImplTest {
                 stubMethodAnalysis(indexModel, future));
 
         doNothing().when(threadsWatcher)
-                .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(WAITING_TIME));
+                .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(waitingTime));
     }
 
     @Test
     public void detect_success() {
         Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
-        methodsDetectionThread.detect(fileModel, METHODS_REGEX, result);
+        methodsDetectionThread.detect(fileModel, result);
     }
 
     @Test(expected = NullPointerException.class)
     public void detect_failed_fileModelIsNull() {
         Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
-        methodsDetectionThread.detect(null, METHODS_REGEX, result);
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void detect_failed_methodsRegexIsNull() {
-        Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
-        methodsDetectionThread.detect(fileModel, null, result);
+        methodsDetectionThread.detect(null, result);
     }
 
     private void stubMethodAnalysis(IndexModel indexModel, Future future) {
