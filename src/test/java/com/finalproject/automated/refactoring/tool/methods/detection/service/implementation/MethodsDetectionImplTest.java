@@ -3,6 +3,7 @@ package com.finalproject.automated.refactoring.tool.methods.detection.service.im
 import com.finalproject.automated.refactoring.tool.files.detection.model.FileModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.implementation.util.TestUtil;
+import com.finalproject.automated.refactoring.tool.methods.detection.service.util.MethodsDetectionUtil;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
 import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
 import org.junit.Before;
@@ -45,6 +46,9 @@ public class MethodsDetectionImplTest {
     @MockBean
     private ThreadsWatcher threadsWatcher;
 
+    @MockBean
+    private MethodsDetectionUtil methodsDetectionUtil;
+
     @Value("${threads.waiting.time}")
     private Integer waitingTime;
 
@@ -66,6 +70,8 @@ public class MethodsDetectionImplTest {
                 eq(Collections.synchronizedMap(new HashMap<>())))).thenReturn(future);
         doNothing().when(threadsWatcher)
                 .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(waitingTime));
+        when(methodsDetectionUtil.getMethodKey(eq(fileModel)))
+                .thenReturn("");
     }
 
 
