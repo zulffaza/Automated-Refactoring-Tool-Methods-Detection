@@ -23,9 +23,9 @@ import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author fazazulfikapp
@@ -53,6 +53,7 @@ public class MethodsDetectionImplTest {
     private Integer waitingTime;
 
     private static final Integer NUMBER_OF_PATH = 3;
+    private static final Integer INVOKED_ONCE = 1;
 
     private FileModel fileModel;
 
@@ -79,6 +80,10 @@ public class MethodsDetectionImplTest {
     public void detect_singlePath_success() {
         List<MethodModel> result = methodsDetection.detect(fileModel);
         assertNull(result);
+
+        verifyMethodsDetectionThread(INVOKED_ONCE);
+        verifyThreadsWatcher();
+        verifyMethodsDetectionUtil();
     }
 
     @Test
@@ -86,6 +91,9 @@ public class MethodsDetectionImplTest {
         Map<String, List<MethodModel>> result = methodsDetection.detect(
                 Collections.nCopies(NUMBER_OF_PATH, fileModel));
         assertNotNull(result);
+
+        verifyMethodsDetectionThread(NUMBER_OF_PATH);
+        verifyThreadsWatcher();
     }
 
     @Test(expected = NullPointerException.class)
@@ -98,5 +106,23 @@ public class MethodsDetectionImplTest {
     public void detect_multiPath_failed_listOfPathIsNull() {
         List<FileModel> fileModels = null;
         methodsDetection.detect(fileModels);
+    }
+
+    private void verifyMethodsDetectionThread(Integer invocationsTimes) {
+        verify(methodsDetectionThread, times(invocationsTimes))
+                .detect(eq(fileModel), eq(Collections.synchronizedMap(new HashMap<>())));
+        verifyNoMoreInteractions(methodsDetectionThread);
+    }
+
+    private void verifyThreadsWatcher() {
+        verify(threadsWatcher, times(INVOKED_ONCE))
+                .waitAllThreadsDone(anyList(), eq(waitingTime));
+        verifyNoMoreInteractions(threadsWatcher);
+    }
+
+    private void verifyMethodsDetectionUtil() {
+        verify(methodsDetectionUtil, times(INVOKED_ONCE))
+                .getMethodKey(eq(fileModel));
+        verifyNoMoreInteractions(methodsDetectionUtil);
     }
 }
