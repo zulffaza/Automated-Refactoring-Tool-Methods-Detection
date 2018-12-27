@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author fazazulfikapp
@@ -48,14 +48,20 @@ public class MethodsDetectionThreadImplTest {
     @Value("${threads.waiting.time}")
     private Integer waitingTime;
 
+    private static final Integer INVOKED_ONCE = 1;
+
     private FileModel fileModel;
+
+    private List<IndexModel> indexModels;
 
     @Before
     public void setUp() {
         Future future = TestUtil.getFutureExpectation();
-        fileModel = TestUtil.getFileModel();
 
-        createIndexModels().forEach(indexModel ->
+        fileModel = TestUtil.getFileModel();
+        indexModels = createIndexModels();
+
+        indexModels.forEach(indexModel ->
                 stubMethodAnalysis(indexModel, future));
 
         doNothing().when(threadsWatcher)
@@ -66,6 +72,9 @@ public class MethodsDetectionThreadImplTest {
     public void detect_success() {
         Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
         methodsDetectionThread.detect(fileModel, result);
+
+        verifiesMethodAnalysis();
+        verifyThreadsWatcher();
     }
 
     @Test(expected = NullPointerException.class)
@@ -113,5 +122,21 @@ public class MethodsDetectionThreadImplTest {
                 .build());
 
         return indexModels;
+    }
+
+    private void verifiesMethodAnalysis() {
+        indexModels.forEach(this::verifiyMethodAnalysis);
+        verifyNoMoreInteractions(methodAnalysis);
+    }
+
+    private void verifiyMethodAnalysis(IndexModel indexModel) {
+        verify(methodAnalysis, times(INVOKED_ONCE))
+                .analysis(eq(fileModel), eq(indexModel), eq(Collections.synchronizedMap(new HashMap<>())));
+    }
+
+    private void verifyThreadsWatcher() {
+        verify(threadsWatcher, times(INVOKED_ONCE))
+                .waitAllThreadsDone(anyList(), eq(waitingTime));
+        verifyNoMoreInteractions(threadsWatcher);
     }
 }
