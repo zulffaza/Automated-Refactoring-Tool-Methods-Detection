@@ -5,6 +5,8 @@ import com.finalproject.automated.refactoring.tool.methods.detection.service.uti
 import lombok.NonNull;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+
 /**
  * @author Faza Zulfika P P
  * @version 1.0.0
@@ -14,10 +16,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class MethodsDetectionUtilImpl implements MethodsDetectionUtil {
 
-    private static final String KEY_DIVIDER = "/";
-
     @Override
     public String getMethodKey(@NonNull FileModel fileModel) {
-        return fileModel.getPath() + KEY_DIVIDER + fileModel.getFilename();
+        return fileModel.getPath() + File.separator + fileModel.getFilename();
     }
 }

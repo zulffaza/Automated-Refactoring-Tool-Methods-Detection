@@ -4,6 +4,8 @@ import com.finalproject.automated.refactoring.tool.files.detection.model.FileMod
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -31,7 +33,7 @@ public class MethodsDetectionUtilImplTest {
     @Test
     public void getMethodKey_success() {
         String key = methodsDetectionUtil.getMethodKey(fileModel);
-        String expectedKey = "path/Filename.java";
+        String expectedKey = "path" + File.separator + "Filename.java";
 
         assertEquals(expectedKey, key);
     }
