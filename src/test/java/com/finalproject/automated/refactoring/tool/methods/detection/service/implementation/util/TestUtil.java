@@ -2,9 +2,6 @@ package com.finalproject.automated.refactoring.tool.methods.detection.service.im
 
 import com.finalproject.automated.refactoring.tool.files.detection.model.FileModel;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 /**
  * @author fazazulfikapp
  * @version 1.0.0
@@ -12,36 +9,6 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class TestUtil {
-
-    public static Future getFutureExpectation() {
-        return new Future() {
-
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
-
-            @Override
-            public boolean isDone() {
-                return true;
-            }
-
-            @Override
-            public Object get() {
-                return null;
-            }
-
-            @Override
-            public Object get(long timeout, TimeUnit unit) {
-                return null;
-            }
-        };
-    }
 
     public static FileModel getFileModel() {
         return FileModel.builder()

@@ -5,20 +5,17 @@ import com.finalproject.automated.refactoring.tool.methods.detection.model.Index
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodAnalysis;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
-import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author fazazulfikapp
@@ -32,24 +29,13 @@ public class MethodsDetectionThreadImpl implements MethodsDetectionThread {
     @Autowired
     private MethodAnalysis methodAnalysis;
 
-    @Autowired
-    private ThreadsWatcher threadsWatcher;
-
-    @Value("${threads.waiting.time}")
-    private Integer waitingTime;
-
     @Value("${methods.detection.regex}")
     private String methodsRegex;
 
-    @Async
     @Override
-    public Future detect(@NonNull FileModel fileModel, @NonNull Map<String, List<MethodModel>> result) {
+    public void detect(@NonNull FileModel fileModel, @NonNull Map<String, List<MethodModel>> result) {
         List<IndexModel> indexOfMethods = getIndexOfMethods(fileModel.getContent());
-        List<Future> threads = doAnalysisMethods(indexOfMethods, fileModel, result);
-
-        threadsWatcher.waitAllThreadsDone(threads, waitingTime);
-
-        return null;
+        doAnalysisMethods(indexOfMethods, fileModel, result);
     }
 
     private List<IndexModel> getIndexOfMethods(String content) {
@@ -78,10 +64,9 @@ public class MethodsDetectionThreadImpl implements MethodsDetectionThread {
         indexModels.add(indexModel);
     }
 
-    private List<Future> doAnalysisMethods(List<IndexModel> indexOfMethods, FileModel fileModel,
-                                           Map<String, List<MethodModel>> result) {
-        return indexOfMethods.stream()
-                .map(indexOfMethod -> methodAnalysis.analysis(fileModel, indexOfMethod, result))
-                .collect(Collectors.toList());
+    private void doAnalysisMethods(List<IndexModel> indexOfMethods, FileModel fileModel,
+                                   Map<String, List<MethodModel>> result) {
+        indexOfMethods.parallelStream()
+                .forEach(indexOfMethod -> methodAnalysis.analysis(fileModel, indexOfMethod, result));
     }
 }
