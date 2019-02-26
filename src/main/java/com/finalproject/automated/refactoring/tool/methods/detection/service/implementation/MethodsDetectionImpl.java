@@ -42,7 +42,7 @@ public class MethodsDetectionImpl implements MethodsDetection {
         Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
         doMethodsDetection(fileModels, result);
 
-        return result;
+        return filterResult(result);
     }
 
     private void doMethodsDetection(List<FileModel> fileModels, Map<String, List<MethodModel>> result) {

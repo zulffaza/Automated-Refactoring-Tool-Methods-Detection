@@ -66,7 +66,7 @@ public class MethodsDetectionImplTest {
     @Test
     public void detect_singlePath_success() {
         List<MethodModel> result = methodsDetection.detect(fileModel);
-        assertTrue(result.isEmpty());
+        assertNull(result);
 
         verifyMethodsDetectionThread(INVOKED_ONCE);
         verifyMethodsDetectionUtil(INVOKED_TWICE);
