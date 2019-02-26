@@ -7,7 +7,6 @@ import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 /**
  * @author fazazulfikapp
@@ -17,6 +16,6 @@ import java.util.concurrent.Future;
 
 public interface MethodAnalysis {
 
-    Future analysis(@NonNull FileModel fileModel, @NonNull IndexModel indexModel,
-                    @NonNull Map<String, List<MethodModel>> result);
+    void analysis(@NonNull FileModel fileModel, @NonNull IndexModel indexModel,
+                  @NonNull Map<String, List<MethodModel>> result);
 }

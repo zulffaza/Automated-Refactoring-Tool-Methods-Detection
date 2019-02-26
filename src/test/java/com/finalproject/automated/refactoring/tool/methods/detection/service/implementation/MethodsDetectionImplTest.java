@@ -2,28 +2,25 @@ package com.finalproject.automated.refactoring.tool.methods.detection.service.im
 
 import com.finalproject.automated.refactoring.tool.files.detection.model.FileModel;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
-import com.finalproject.automated.refactoring.tool.methods.detection.service.implementation.util.TestUtil;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.util.MethodsDetectionUtil;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
-import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -44,37 +41,27 @@ public class MethodsDetectionImplTest {
     private MethodsDetectionThread methodsDetectionThread;
 
     @MockBean
-    private ThreadsWatcher threadsWatcher;
-
-    @MockBean
     private MethodsDetectionUtil methodsDetectionUtil;
-
-    @Value("${threads.waiting.time}")
-    private Integer waitingTime;
 
     private static final Integer NUMBER_OF_PATH = 3;
     private static final Integer INVOKED_ONCE = 1;
+    private static final Integer INVOKED_TWICE = 2;
 
     private FileModel fileModel;
 
     @Before
     public void setUp() {
-        Future future = TestUtil.getFutureExpectation();
-
         fileModel = FileModel.builder()
                 .path("path")
                 .filename("Filename.java")
                 .content("content")
                 .build();
 
-        when(methodsDetectionThread.detect(eq(fileModel),
-                eq(Collections.synchronizedMap(new HashMap<>())))).thenReturn(future);
-        doNothing().when(threadsWatcher)
-                .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(waitingTime));
+        doNothing().when(methodsDetectionThread)
+                .detect(eq(fileModel), eq(createEmptyMethodModels()));
         when(methodsDetectionUtil.getMethodKey(eq(fileModel)))
                 .thenReturn("");
     }
-
 
     @Test
     public void detect_singlePath_success() {
@@ -82,8 +69,7 @@ public class MethodsDetectionImplTest {
         assertNull(result);
 
         verifyMethodsDetectionThread(INVOKED_ONCE);
-        verifyThreadsWatcher();
-        verifyMethodsDetectionUtil();
+        verifyMethodsDetectionUtil(INVOKED_TWICE);
     }
 
     @Test
@@ -93,7 +79,7 @@ public class MethodsDetectionImplTest {
         assertNotNull(result);
 
         verifyMethodsDetectionThread(NUMBER_OF_PATH);
-        verifyThreadsWatcher();
+        verifyMethodsDetectionUtil(NUMBER_OF_PATH);
     }
 
     @Test(expected = NullPointerException.class)
@@ -108,20 +94,21 @@ public class MethodsDetectionImplTest {
         methodsDetection.detect(fileModels);
     }
 
+    private Map<String, List<MethodModel>> createEmptyMethodModels() {
+        Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
+        result.put("", Collections.synchronizedList(new ArrayList<>()));
+
+        return result;
+    }
+
     private void verifyMethodsDetectionThread(Integer invocationsTimes) {
         verify(methodsDetectionThread, times(invocationsTimes))
-                .detect(eq(fileModel), eq(Collections.synchronizedMap(new HashMap<>())));
+                .detect(eq(fileModel), eq(createEmptyMethodModels()));
         verifyNoMoreInteractions(methodsDetectionThread);
     }
 
-    private void verifyThreadsWatcher() {
-        verify(threadsWatcher, times(INVOKED_ONCE))
-                .waitAllThreadsDone(anyList(), eq(waitingTime));
-        verifyNoMoreInteractions(threadsWatcher);
-    }
-
-    private void verifyMethodsDetectionUtil() {
-        verify(methodsDetectionUtil, times(INVOKED_ONCE))
+    private void verifyMethodsDetectionUtil(Integer invokedTimes) {
+        verify(methodsDetectionUtil, times(invokedTimes))
                 .getMethodKey(eq(fileModel));
         verifyNoMoreInteractions(methodsDetectionUtil);
     }

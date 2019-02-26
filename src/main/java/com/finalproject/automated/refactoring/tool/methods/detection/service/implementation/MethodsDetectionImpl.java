@@ -5,17 +5,15 @@ import com.finalproject.automated.refactoring.tool.methods.detection.service.Met
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodsDetectionThread;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.util.MethodsDetectionUtil;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
-import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /**
@@ -31,13 +29,7 @@ public class MethodsDetectionImpl implements MethodsDetection {
     private MethodsDetectionThread methodsDetectionThread;
 
     @Autowired
-    private ThreadsWatcher threadsWatcher;
-
-    @Autowired
     private MethodsDetectionUtil methodsDetectionUtil;
-
-    @Value("${threads.waiting.time}")
-    private Integer waitingTime;
 
     @Override
     public List<MethodModel> detect(@NonNull FileModel fileModel) {
@@ -48,16 +40,33 @@ public class MethodsDetectionImpl implements MethodsDetection {
     @Override
     public Map<String, List<MethodModel>> detect(@NonNull List<FileModel> fileModels) {
         Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
-        List<Future> threads = doMethodsDetection(fileModels, result);
+        doMethodsDetection(fileModels, result);
 
-        threadsWatcher.waitAllThreadsDone(threads, waitingTime);
-
-        return result;
+        return filterResult(result);
     }
 
-    private List<Future> doMethodsDetection(List<FileModel> fileModels, Map<String, List<MethodModel>> result) {
-        return fileModels.stream()
-                .map(fileModel -> methodsDetectionThread.detect(fileModel, result))
-                .collect(Collectors.toList());
+    private void doMethodsDetection(List<FileModel> fileModels, Map<String, List<MethodModel>> result) {
+        fileModels.parallelStream()
+                .map(fileModel -> createEmptyMethodModels(fileModel, result))
+                .forEach(fileModel -> methodsDetectionThread.detect(fileModel, result));
+    }
+
+    private FileModel createEmptyMethodModels(FileModel fileModel, Map<String, List<MethodModel>> result) {
+        String key = methodsDetectionUtil.getMethodKey(fileModel);
+        result.put(key, Collections.synchronizedList(new ArrayList<>()));
+
+        return fileModel;
+    }
+
+    private Map<String, List<MethodModel>> filterResult(Map<String, List<MethodModel>> result) {
+        return result.entrySet()
+                .stream()
+                .filter(this::isHavingValue)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Boolean isHavingValue(Map.Entry<String, List<MethodModel>> resultEntry) {
+        return !resultEntry.getValue()
+                .isEmpty();
     }
 }

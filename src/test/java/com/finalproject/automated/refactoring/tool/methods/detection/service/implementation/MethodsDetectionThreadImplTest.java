@@ -5,12 +5,10 @@ import com.finalproject.automated.refactoring.tool.methods.detection.model.Index
 import com.finalproject.automated.refactoring.tool.methods.detection.service.MethodAnalysis;
 import com.finalproject.automated.refactoring.tool.methods.detection.service.implementation.util.TestUtil;
 import com.finalproject.automated.refactoring.tool.model.MethodModel;
-import com.finalproject.automated.refactoring.tool.utils.service.ThreadsWatcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -20,9 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -42,12 +38,6 @@ public class MethodsDetectionThreadImplTest {
     @MockBean
     private MethodAnalysis methodAnalysis;
 
-    @MockBean
-    private ThreadsWatcher threadsWatcher;
-
-    @Value("${threads.waiting.time}")
-    private Integer waitingTime;
-
     private static final Integer INVOKED_ONCE = 1;
 
     private FileModel fileModel;
@@ -56,16 +46,10 @@ public class MethodsDetectionThreadImplTest {
 
     @Before
     public void setUp() {
-        Future future = TestUtil.getFutureExpectation();
-
         fileModel = TestUtil.getFileModel();
         indexModels = createIndexModels();
 
-        indexModels.forEach(indexModel ->
-                stubMethodAnalysis(indexModel, future));
-
-        doNothing().when(threadsWatcher)
-                .waitAllThreadsDone(eq(Collections.singletonList(future)), eq(waitingTime));
+        indexModels.forEach(this::stubMethodAnalysis);
     }
 
     @Test
@@ -74,7 +58,6 @@ public class MethodsDetectionThreadImplTest {
         methodsDetectionThread.detect(fileModel, result);
 
         verifiesMethodAnalysis();
-        verifyThreadsWatcher();
     }
 
     @Test(expected = NullPointerException.class)
@@ -83,9 +66,9 @@ public class MethodsDetectionThreadImplTest {
         methodsDetectionThread.detect(null, result);
     }
 
-    private void stubMethodAnalysis(IndexModel indexModel, Future future) {
-        when(methodAnalysis.analysis(eq(fileModel), eq(indexModel),
-                eq(Collections.synchronizedMap(new HashMap<>())))).thenReturn(future);
+    private void stubMethodAnalysis(IndexModel indexModel) {
+        doNothing().when(methodAnalysis)
+                .analysis(eq(fileModel), eq(indexModel), eq(Collections.synchronizedMap(new HashMap<>())));
     }
 
     private List<IndexModel> createIndexModels() {
@@ -132,11 +115,5 @@ public class MethodsDetectionThreadImplTest {
     private void verifiyMethodAnalysis(IndexModel indexModel) {
         verify(methodAnalysis, times(INVOKED_ONCE))
                 .analysis(eq(fileModel), eq(indexModel), eq(Collections.synchronizedMap(new HashMap<>())));
-    }
-
-    private void verifyThreadsWatcher() {
-        verify(threadsWatcher, times(INVOKED_ONCE))
-                .waitAllThreadsDone(anyList(), eq(waitingTime));
-        verifyNoMoreInteractions(threadsWatcher);
     }
 }

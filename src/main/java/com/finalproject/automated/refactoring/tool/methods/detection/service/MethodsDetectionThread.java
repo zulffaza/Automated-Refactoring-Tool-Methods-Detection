@@ -6,7 +6,6 @@ import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 /**
  * @author fazazulfikapp
@@ -16,5 +15,5 @@ import java.util.concurrent.Future;
 
 public interface MethodsDetectionThread {
 
-    Future detect(@NonNull FileModel fileModel, @NonNull Map<String, List<MethodModel>> result);
+    void detect(@NonNull FileModel fileModel, @NonNull Map<String, List<MethodModel>> result);
 }
