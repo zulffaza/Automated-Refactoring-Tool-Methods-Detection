@@ -17,10 +17,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -45,7 +45,6 @@ public class MethodsDetectionImplTest {
 
     private static final Integer NUMBER_OF_PATH = 3;
     private static final Integer INVOKED_ONCE = 1;
-    private static final Integer INVOKED_TWICE = 2;
 
     private FileModel fileModel;
 
@@ -69,7 +68,7 @@ public class MethodsDetectionImplTest {
         assertNull(result);
 
         verifyMethodsDetectionThread(INVOKED_ONCE);
-        verifyMethodsDetectionUtil(INVOKED_TWICE);
+        verifyMethodsDetectionUtil();
     }
 
     @Test
@@ -79,7 +78,6 @@ public class MethodsDetectionImplTest {
         assertNotNull(result);
 
         verifyMethodsDetectionThread(NUMBER_OF_PATH);
-        verifyMethodsDetectionUtil(NUMBER_OF_PATH);
     }
 
     @Test(expected = NullPointerException.class)
@@ -98,7 +96,7 @@ public class MethodsDetectionImplTest {
         Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
         result.put("", Collections.synchronizedList(new ArrayList<>()));
 
-        return result;
+        return new ConcurrentHashMap<>();
     }
 
     private void verifyMethodsDetectionThread(Integer invocationsTimes) {
@@ -107,8 +105,8 @@ public class MethodsDetectionImplTest {
         verifyNoMoreInteractions(methodsDetectionThread);
     }
 
-    private void verifyMethodsDetectionUtil(Integer invokedTimes) {
-        verify(methodsDetectionUtil, times(invokedTimes))
+    private void verifyMethodsDetectionUtil() {
+        verify(methodsDetectionUtil, times(INVOKED_ONCE))
                 .getMethodKey(eq(fileModel));
         verifyNoMoreInteractions(methodsDetectionUtil);
     }
