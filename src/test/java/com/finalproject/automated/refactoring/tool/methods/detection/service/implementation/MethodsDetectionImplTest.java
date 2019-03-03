@@ -12,12 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -57,7 +55,7 @@ public class MethodsDetectionImplTest {
                 .build();
 
         doNothing().when(methodsDetectionThread)
-                .detect(eq(fileModel), eq(createEmptyMethodModels()));
+                .detect(eq(fileModel), eq(new HashMap<>()));
         when(methodsDetectionUtil.getMethodKey(eq(fileModel)))
                 .thenReturn("");
     }
@@ -92,16 +90,9 @@ public class MethodsDetectionImplTest {
         methodsDetection.detect(fileModels);
     }
 
-    private Map<String, List<MethodModel>> createEmptyMethodModels() {
-        Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
-        result.put("", Collections.synchronizedList(new ArrayList<>()));
-
-        return new ConcurrentHashMap<>();
-    }
-
     private void verifyMethodsDetectionThread(Integer invocationsTimes) {
         verify(methodsDetectionThread, times(invocationsTimes))
-                .detect(eq(fileModel), eq(createEmptyMethodModels()));
+                .detect(eq(fileModel), eq(new HashMap<>()));
         verifyNoMoreInteractions(methodsDetectionThread);
     }
 
