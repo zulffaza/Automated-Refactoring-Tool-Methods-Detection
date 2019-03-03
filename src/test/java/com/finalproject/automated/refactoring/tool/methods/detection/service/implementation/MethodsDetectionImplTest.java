@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +19,6 @@ import java.util.Map;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -45,7 +43,6 @@ public class MethodsDetectionImplTest {
 
     private static final Integer NUMBER_OF_PATH = 3;
     private static final Integer INVOKED_ONCE = 1;
-    private static final Integer INVOKED_TWICE = 2;
 
     private FileModel fileModel;
 
@@ -58,7 +55,7 @@ public class MethodsDetectionImplTest {
                 .build();
 
         doNothing().when(methodsDetectionThread)
-                .detect(eq(fileModel), eq(createEmptyMethodModels()));
+                .detect(eq(fileModel), eq(new HashMap<>()));
         when(methodsDetectionUtil.getMethodKey(eq(fileModel)))
                 .thenReturn("");
     }
@@ -69,7 +66,7 @@ public class MethodsDetectionImplTest {
         assertNull(result);
 
         verifyMethodsDetectionThread(INVOKED_ONCE);
-        verifyMethodsDetectionUtil(INVOKED_TWICE);
+        verifyMethodsDetectionUtil();
     }
 
     @Test
@@ -79,7 +76,6 @@ public class MethodsDetectionImplTest {
         assertNotNull(result);
 
         verifyMethodsDetectionThread(NUMBER_OF_PATH);
-        verifyMethodsDetectionUtil(NUMBER_OF_PATH);
     }
 
     @Test(expected = NullPointerException.class)
@@ -94,21 +90,14 @@ public class MethodsDetectionImplTest {
         methodsDetection.detect(fileModels);
     }
 
-    private Map<String, List<MethodModel>> createEmptyMethodModels() {
-        Map<String, List<MethodModel>> result = Collections.synchronizedMap(new HashMap<>());
-        result.put("", Collections.synchronizedList(new ArrayList<>()));
-
-        return result;
-    }
-
     private void verifyMethodsDetectionThread(Integer invocationsTimes) {
         verify(methodsDetectionThread, times(invocationsTimes))
-                .detect(eq(fileModel), eq(createEmptyMethodModels()));
+                .detect(eq(fileModel), eq(new HashMap<>()));
         verifyNoMoreInteractions(methodsDetectionThread);
     }
 
-    private void verifyMethodsDetectionUtil(Integer invokedTimes) {
-        verify(methodsDetectionUtil, times(invokedTimes))
+    private void verifyMethodsDetectionUtil() {
+        verify(methodsDetectionUtil, times(INVOKED_ONCE))
                 .getMethodKey(eq(fileModel));
         verifyNoMoreInteractions(methodsDetectionUtil);
     }
