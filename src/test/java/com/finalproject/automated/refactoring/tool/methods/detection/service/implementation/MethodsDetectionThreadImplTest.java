@@ -107,11 +107,11 @@ public class MethodsDetectionThreadImplTest {
     }
 
     private void verifiesMethodAnalysis() {
-        indexModels.forEach(this::verifiyMethodAnalysis);
+        indexModels.forEach(this::verifyMethodAnalysis);
         verifyNoMoreInteractions(methodAnalysis);
     }
 
-    private void verifiyMethodAnalysis(IndexModel indexModel) {
+    private void verifyMethodAnalysis(IndexModel indexModel) {
         verify(methodAnalysis, times(INVOKED_ONCE))
                 .analysis(eq(fileModel), eq(indexModel), eq(new HashMap<>()));
     }

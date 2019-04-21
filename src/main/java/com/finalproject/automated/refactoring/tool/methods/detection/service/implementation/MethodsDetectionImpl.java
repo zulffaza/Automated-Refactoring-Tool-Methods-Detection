@@ -9,6 +9,7 @@ import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,13 @@ public class MethodsDetectionImpl implements MethodsDetection {
 
     private void doMethodsDetection(List<FileModel> fileModels, Map<String, List<MethodModel>> result) {
         fileModels.parallelStream()
-                .forEach(fileModel -> methodsDetectionThread.detect(fileModel, result));
+                .forEach(fileModel -> detectMethods(fileModel, result));
+    }
+
+    private void detectMethods(FileModel fileModel, Map<String, List<MethodModel>> result) {
+        String key = methodsDetectionUtil.getMethodKey(fileModel);
+        result.put(key, new ArrayList<>());
+
+        methodsDetectionThread.detect(fileModel, result);
     }
 }
