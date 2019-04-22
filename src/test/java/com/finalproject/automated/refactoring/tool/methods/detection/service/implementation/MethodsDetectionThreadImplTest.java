@@ -14,6 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class MethodsDetectionThreadImplTest {
 
     @Test
     public void detect_success() {
-        Map<String, List<MethodModel>> result = new HashMap<>();
+        Map<String, List<MethodModel>> result = createResult();
         methodsDetectionThread.detect(fileModel, result);
 
         verifiesMethodAnalysis();
@@ -61,13 +62,20 @@ public class MethodsDetectionThreadImplTest {
 
     @Test(expected = NullPointerException.class)
     public void detect_failed_fileModelIsNull() {
-        Map<String, List<MethodModel>> result = new HashMap<>();
+        Map<String, List<MethodModel>> result = createResult();
         methodsDetectionThread.detect(null, result);
+    }
+
+    private Map<String, List<MethodModel>> createResult() {
+        Map<String, List<MethodModel>> result = new HashMap<>();
+        result.put("", Collections.synchronizedList(new ArrayList<>()));
+
+        return result;
     }
 
     private void stubMethodAnalysis(IndexModel indexModel) {
         doNothing().when(methodAnalysis)
-                .analysis(eq(fileModel), eq(indexModel), eq(new HashMap<>()));
+                .analysis(eq(fileModel), eq(indexModel), eq(createResult()));
     }
 
     private List<IndexModel> createIndexModels() {
@@ -113,6 +121,6 @@ public class MethodsDetectionThreadImplTest {
 
     private void verifyMethodAnalysis(IndexModel indexModel) {
         verify(methodAnalysis, times(INVOKED_ONCE))
-                .analysis(eq(fileModel), eq(indexModel), eq(new HashMap<>()));
+                .analysis(eq(fileModel), eq(indexModel), eq(createResult()));
     }
 }

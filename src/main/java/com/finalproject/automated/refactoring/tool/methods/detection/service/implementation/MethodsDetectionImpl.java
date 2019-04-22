@@ -51,7 +51,7 @@ public class MethodsDetectionImpl implements MethodsDetection {
 
     private void detectMethods(FileModel fileModel, Map<String, List<MethodModel>> result) {
         String key = methodsDetectionUtil.getMethodKey(fileModel);
-        result.put(key, new ArrayList<>());
+        result.put(key, Collections.synchronizedList(new ArrayList<>()));
 
         methodsDetectionThread.detect(fileModel, result);
     }

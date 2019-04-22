@@ -95,7 +95,7 @@ public class MethodsDetectionImplTest {
 
     private Map<String, List<MethodModel>> createResult() {
         Map<String, List<MethodModel>> result = new HashMap<>();
-        result.put("", new ArrayList<>());
+        result.put("", Collections.synchronizedList(new ArrayList<>()));
 
         return result;
     }
